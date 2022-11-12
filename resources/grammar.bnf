@@ -1,0 +1,17 @@
+S := <ws> Resource <ws>
+Resource := ResourceType <ws> ResourceName <ws> (ShorthandInit | Block)?
+
+ResourceType := "VPC" | "Subnet" | "EC2"
+
+ShorthandInit := <ws> '=' <ws> Expr
+
+Block := <'{'> '' <'}'> (* TODO: define*) 
+
+Expr := '' (* TODO: define *)
+
+ResourceName := letter (letter | number)*
+
+ws := #'\s*'
+<letter> := #'[a-zA-Z]'
+<number> := #'[0-9]'
+
