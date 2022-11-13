@@ -1,17 +1,24 @@
 S := <ws> Resource <ws>
-Resource := ResourceType <ws> ResourceName <ws> (ShorthandInit | Block)?
+Resource := ResourceType <ws> Name <ws> (ShorthandInit | Block)?
 
 ResourceType := "VPC" | "Subnet" | "EC2"
 
-ShorthandInit := <ws> '=' <ws> Expr
+ShorthandInit := <ws> <'='> <ws> Expr
 
-Block := <'{'> '' <'}'> (* TODO: define*) 
+Block := <'{'> <ws> (Resource | Attribute | <ws>)* <ws> <'}'>
 
-Expr := '' (* TODO: define *)
+Attribute := Name <ws> (ShorthandInit | Block)
 
-ResourceName := letter (letter | number)*
+Name := #'[a-zA-Z][a-zA-Z0-9_\-]*'
+
+<Expr> := String | Array | PlainString
+
+String := <'"'> #'([^"\\]|\\.)*' <'"'> |
+          <"'"> #"([^'\\]|\\.)*" <"'">
+
+PlainString := #'[^\s\'"{}\[\]]+'
+
+Array := <'['> <ws> (ArrayExpr (<ws> <','> <ws> ArrayExpr)* )? <ws> <']'>
+<ArrayExpr> := String | Array | Name
 
 ws := #'\s*'
-<letter> := #'[a-zA-Z]'
-<number> := #'[0-9]'
-
