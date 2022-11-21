@@ -20,6 +20,12 @@
 (def generate-id
   (fn [] (do (swap! id-counter inc) @id-counter)))
 
+(defrecord SymTabEntry [id entity])
+
+(def generate-id
+  (let [id-counter (atom 0)]
+    (fn [] (do (swap! id-counter inc) @id-counter))))
+
 (defmacro with-sym-tab
   "Bind infradesc symbol table to `*sym-tab*`"
   [& body]
