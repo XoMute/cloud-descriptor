@@ -7,7 +7,7 @@
 (defn input->symbol-table
   [input]
   (let [parse-result (parse input)]
-    (fill-sym-tab parse-result)))
+    (fill-sym-tab! parse-result)))
 
 (defn -main 
   [& args]
