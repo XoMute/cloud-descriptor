@@ -36,3 +36,8 @@
     (maybe-assoc m k (maybe-assoc-in (get m k) ks v))
     (maybe-assoc m k v)))
 
+(defn split-by
+  [pred coll]
+  [(filter pred coll)
+   (filter (complement pred) coll)])
+

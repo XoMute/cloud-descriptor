@@ -6,8 +6,6 @@
             [cloud-descriptor.translator :refer :all]
             [cloud-descriptor.terraform-domain :refer :all]))
 
-;; todo: test for auto-generation of attributes and resources
-
 (defn- translate-full
   []
   (translate-sym-tab :auto-generate-cidr-blocks true))
@@ -34,18 +32,20 @@
             (initialize)
             (with-sym-tab
               (input->symbol-table input-string)
-              (is (= [(->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")
-                                   (->Attribute "region" "eu-north-1")])]
+              (is (= [(->Provider "aws"
+                                  [(->Attribute "region" "eu-north-1")])
+                      (->Resource "TestVPC" "aws_vpc"
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")])]
                      (translate-sym-tab))))))
         (testing "> with auto-generated cidr_block"
           (let [input-string "VPC TestVPC { region=eu-north-1 }"]
             (initialize)
             (with-sym-tab
               (input->symbol-table input-string)
-              (is (= [(->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")
-                                   (->Attribute "region" "eu-north-1")])]
+              (is (= [(->Provider "aws"
+                                  [(->Attribute "region" "eu-north-1")])
+                      (->Resource "TestVPC" "aws_vpc"
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")])]
                      (translate-sym-tab :auto-generate-cidr-blocks :true)))))))
 
       (testing "with one subnet"
@@ -57,9 +57,10 @@
           (initialize)
           (with-sym-tab
             (input->symbol-table input-string)
-            (is (= [(->Resource "TestVPC" "aws_vpc"
-                                [(->Attribute "cidr_block" "10.0.0.0/16")
-                                 (->Attribute "region" "eu-north-1")])
+            (is (= [(->Provider "aws"
+                                [(->Attribute "region" "eu-north-1")])
+                    (->Resource "TestVPC" "aws_vpc"
+                                [(->Attribute "cidr_block" "10.0.0.0/16")])
                     (->Resource "TestSubnet" "aws_subnet"
                                 [(->Attribute "vpc_id"
                                               (->QualifiedName "aws_vpc" "TestVPC" "id"))
@@ -76,9 +77,10 @@
               (initialize)
               (with-sym-tab
                 (input->symbol-table input-string)
-                (is (= [(->Resource "TestVPC" "aws_vpc"
-                                    [(->Attribute "cidr_block" "10.0.0.0/16")
-                                     (->Attribute "region" "eu-north-1")])
+                (is (= [(->Provider "aws"
+                                    [(->Attribute "region" "eu-north-1")])
+                        (->Resource "TestVPC" "aws_vpc"
+                                    [(->Attribute "cidr_block" "10.0.0.0/16")])
                         (->Resource "TestSubnet" "aws_subnet"
                                     [(->Attribute "vpc_id"
                                                   (->QualifiedName "aws_vpc"
@@ -95,9 +97,10 @@
               (initialize)
               (with-sym-tab
                 (input->symbol-table input-string)
-                (is (= [(->Resource "TestVPC" "aws_vpc"
-                                    [(->Attribute "cidr_block" "10.0.0.0/16")
-                                     (->Attribute "region" "eu-north-1")])
+                (is (= [(->Provider "aws"
+                                    [(->Attribute "region" "eu-north-1")])
+                        (->Resource "TestVPC" "aws_vpc"
+                                    [(->Attribute "cidr_block" "10.0.0.0/16")])
                         (->Resource "TestSubnet" "aws_subnet"
                                     [(->Attribute "vpc_id"
                                                   (->QualifiedName "aws_vpc"
@@ -155,9 +158,10 @@
               (initialize)
               (with-sym-tab
                 (input->symbol-table input-string)
-                (is (= [(->Resource "TestVPC" "aws_vpc"
-                                    [(->Attribute "cidr_block" "10.0.0.0/16")
-                                     (->Attribute "region" "eu-north-1")])
+                (is (= [(->Provider "aws"
+                                    [(->Attribute "region" "eu-north-1")])
+                        (->Resource "TestVPC" "aws_vpc"
+                                    [(->Attribute "cidr_block" "10.0.0.0/16")])
                         (->Resource "TestSubnet" "aws_subnet"
                                     [(->Attribute "vpc_id"
                                                   (->QualifiedName "aws_vpc"
@@ -185,9 +189,10 @@
             (initialize)
             (with-sym-tab
               (input->symbol-table input-string)
-              (is (= [(->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")
-                                   (->Attribute "region" "eu-north-1")])
+              (is (= [(->Provider "aws"
+                                  [(->Attribute "region" "eu-north-1")])
+                      (->Resource "TestVPC" "aws_vpc"
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")])
                       (->Resource "TestSubnet1" "aws_subnet"
                                   [(->Attribute "vpc_id"
                                                 (->QualifiedName "aws_vpc"
@@ -211,9 +216,10 @@
             (initialize)
             (with-sym-tab
               (input->symbol-table input-string)
-              (is (= [(->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")
-                                   (->Attribute "region" "eu-north-1")])
+              (is (= [(->Provider "aws"
+                                  [(->Attribute "region" "eu-north-1")])
+                      (->Resource "TestVPC" "aws_vpc"
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")])
                       (->Resource "TestSubnet1" "aws_subnet"
                                   [(->Attribute "vpc_id"
                                                 (->QualifiedName "aws_vpc"
@@ -257,10 +263,10 @@
         (initialize)
         (with-sym-tab
           (input->symbol-table input-string)
-          (is (= [(->Resource "ExampleVPC" "aws_vpc"
-                              [(->Attribute "cidr_block" "172.22.0.0/16")
-                               (->Attribute "region" "eu-north-1") ;; TODO: move region to provider
-                               ])
+          (is (= [(->Provider "aws"
+                              [(->Attribute "region" "eu-north-1")])
+                  (->Resource "ExampleVPC" "aws_vpc"
+                              [(->Attribute "cidr_block" "172.22.0.0/16")])
                   (->Resource "ExampleSubnet" "aws_subnet"
                               [(->Attribute "vpc_id"
                                             (->QualifiedName "aws_vpc"

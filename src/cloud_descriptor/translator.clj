@@ -5,10 +5,10 @@
             [cloud-descriptor.utils :refer :all]
             [cloud-descriptor.transformations.auto-cidr-blocks :refer :all])
   (:import [cloud_descriptor.domain Attribute
-                                    BlockAttribute
-                                    VPCResource
-                                    SubnetResource
-                                    EC2Resource]))
+            BlockAttribute
+            VPCResource
+            SubnetResource
+            EC2Resource]))
 
 (declare translate-to-list)
 
@@ -90,9 +90,14 @@
             resources (->> (:resources this)
                            (map :entity)
                            (validate-vpc-resources)
-                           translate-to-list)]
-        (concat [(tfd/->Resource (:name this) "aws_vpc"
-                                 attributes)]
+                           translate-to-list)
+            [provider-attrs vpc-attrs]
+            (->> attributes
+                 (split-by #(= (:name %) "region")))
+            provider (tfd/->Provider "aws" provider-attrs)
+            vpc (tfd/->Resource (:name this) "aws_vpc"
+                                 vpc-attrs)]
+        (concat [provider vpc]
                 resources))))
 
   SubnetResource
@@ -149,4 +154,10 @@
   ;; TODO: transformation to add lifecycle?
   ;; Translate resources in `*sym-tab*`
   (translate-resources))
+
+(defn translate-to-tf
+  [& options]
+  (->> (apply translate-sym-tab options)
+       ;; todo: make correct entries
+       (reset! terraform-sym-tab)))
 
