@@ -31,7 +31,7 @@
          \newline)))
 
 (extend-protocol Generatable
-  Attribute
+  Attribute ;; TODO: attribute value might also be an array
   (generate [this]
     (let [value (:value this)
           value (if (string? value)
