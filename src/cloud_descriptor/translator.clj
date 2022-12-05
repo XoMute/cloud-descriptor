@@ -156,8 +156,10 @@
   (translate-resources))
 
 (defn translate-to-tf
-  [& options]
-  (->> (apply translate-sym-tab options)
+  [options]
+  (println options)
+  (->> (into [] cat options)
+       (apply translate-sym-tab)
        ;; todo: make correct entries
        (reset! terraform-sym-tab)))
 

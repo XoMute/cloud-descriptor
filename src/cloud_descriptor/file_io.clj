@@ -40,4 +40,6 @@
   [out-dir output]
   (let [out-file (str out-dir "/main.tf")]
     (make-parents out-file)
-    (spit out-file output)))
+    (with-open [out (writer out-file)]
+      (.write out output)
+      (.write out "\n"))))
