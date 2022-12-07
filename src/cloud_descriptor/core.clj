@@ -75,4 +75,4 @@
                        get-file-contents
                        (translate-infra options))]
         (write-to-main-in-dir! out-path output)
-        (println (str "Translation is complete. Go to '" out-path "' and execute 'terraform plan' to see the generated infrastructure"))))))
+        (println (str "Translation is complete. Go to '" out-path "' and execute 'terraform init' and 'terraform plan' to see the generated infrastructure"))))))

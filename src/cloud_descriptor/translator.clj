@@ -157,7 +157,6 @@
 
 (defn translate-to-tf
   [options]
-  (println options)
   (->> (into [] cat options)
        (apply translate-sym-tab)
        ;; todo: make correct entries
