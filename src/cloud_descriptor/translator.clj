@@ -145,20 +145,30 @@
 
 (defn translate-sym-tab
   "Translate `*sym-tab*` into Terraform `*sym-tab*`"
-  [& {:keys [auto-generate-cidr-blocks]
+  [& {:keys [auto-generate-cidr-blocks
+             networking-transformation]
       :or {auto-generate-cidr-blocks nil}}] ;; todo: add translation options
   ;; Run needed transformations
   (when auto-generate-cidr-blocks
     (auto-generate-cidr-blocks!))
-  ;; TODO: transformation to add network interfaces to ec2 instances
+
   ;; TODO: transformation to add lifecycle?
   ;; Translate resources in `*sym-tab*`
   (translate-resources))
 
+(defn- post-translation-transformations
+  "Run transformations on Terraform `*sym-tab*`"
+  [& {:keys []
+      :or {}}])
+
 (defn translate-to-tf
   [options]
-  (->> (into [] cat options)
-       (apply translate-sym-tab)
-       ;; todo: make correct entries
-       (reset! terraform-sym-tab)))
+  (let [options (into [] cat options)
+        translated-resources (apply translate-sym-tab options)]
+    (reset-generator!)
+    (with-terraform
+      (->> translated-resources
+           (apply fill-sym-tab!)))
+
+    (apply post-translation-transformations options)))
 

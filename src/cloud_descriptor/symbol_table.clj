@@ -10,12 +10,16 @@
 
 (defrecord SymTabEntry [id owner entity]) ;; TODO: rename
 
+(defn reset-generator!
+  []
+  (alter-var-root #'id-counter (constantly (atom 0))))
+
 (defn initialize
   []
   (alter-var-root #'infradesc-sym-tab (constantly (atom {:entries ;; TODO: rename
-                                                         nil})))
-  (alter-var-root #'terraform-sym-tab (constantly (atom {:entries nil})))
-  (alter-var-root #'id-counter (constantly (atom 0))))
+                                                         []})))
+  (alter-var-root #'terraform-sym-tab (constantly (atom {:entries []})))
+  (reset-generator!))
 
 (def generate-id
   (fn [] (do (swap! id-counter inc) @id-counter)))
@@ -48,12 +52,8 @@
         resources (->> (:resources resource)
                        (map #(resource-to-sym-tab-entry id %))
                        doall)
-        updated-resource (if (contains? resource :attributes)
-                           (assoc-in resource [:attributes] attributes)
-                           resource)
-        updated-resource (if (contains? resource :resources)
-                           (assoc-in updated-resource [:resources] resources)
-                           updated-resource)]
+        updated-resource (maybe-assoc-in resource [:attributes] attributes)
+        updated-resource (maybe-assoc-in updated-resource [:resources] resources)]
     (->SymTabEntry id owner-id updated-resource)))
 
 (defn new-node
@@ -89,8 +89,6 @@
                   resources 
                   (->> resource
                        :resources
-                       (filter #(->> (:entity %)
-                                     (instance? res-type)))
                        (mapcat %helper))]
               (if (instance? res-type resource)
                 (cons resource-node resources)
@@ -139,13 +137,17 @@
                       {:node node
                        :owner-id owner-id})))))
 
-(defn node-get-attr-val ;; TODO: DON'T TOUCH UNTILL ALL TESTS PASS!!!!
-  [node name]
-  (->> (node-attrs node)
+(defn entity-get-attr-val  ;; TODO: DON'T TOUCH UNTILL ALL TESTS PASS!!!!
+  [entity name]
+  (->> (:attributes entity)
        (map :entity)
        (filter #(= (:name %) name))
        last
        :value))
+
+(defn node-get-attr-val
+  [node name]
+  (entity-get-attr-val (:entity node) name))
 
 (defn update-node!
   [node ;; TODO

@@ -13,12 +13,12 @@
      (initialize)
      (with-sym-tab
        (input->symbol-table input-string#)
-       (translate-to-tf))
+       (translate-to-tf {}))
      (with-terraform
        (let [output# (generate-resources)]
          ;; todo: better diff
-         (println "output:")
-         (println output#)
+         ;; (println "output:")
+         ;; (println output#)
          (is (= ~expected-output
                 output#))))))
 

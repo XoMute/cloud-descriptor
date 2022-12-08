@@ -24,7 +24,9 @@
 
 (defn generate-attributes
   [resource]
-  (let [attributes (map generate (:attributes resource))
+  (let [attributes (->> (:attributes resource)
+                        (map :entity)
+                        (map generate))
         spaces (generate-spaces)]
     (str spaces
          (clojure.string/join (str \newline spaces) attributes)
@@ -62,9 +64,7 @@
 
   Provider
   (generate [this]
-    (let [region (->> (:attributes this)
-                      (filter #(= (:name %) "region"))
-                      first)
+    (let [region (entity-get-attr-val this "region")
           provider (str "provider " \" (:name this) \")
           attrs (indent
                  (generate-attributes this))
@@ -98,7 +98,7 @@
 (defn generate-resources
   "Traverse all resources in symbol table and generate them"
   []
-  (->> @*sym-tab*
+  (->> (sym-tab-entities)
        (map generate)
        (clojure.string/join "\n\n")))
 
