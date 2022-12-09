@@ -25,27 +25,38 @@
 (defn generate-attributes
   [resource]
   (let [attributes (->> (:attributes resource)
+                        (sort #(< (:id %1)
+                                  (:id %2))) ;; TODO: maybe remove?
                         (map :entity)
                         (map generate))
         spaces (generate-spaces)]
-    (str spaces
-         (clojure.string/join (str \newline spaces) attributes)
-         \newline)))
+    (if (seq attributes)
+      (str \newline spaces
+           (clojure.string/join (str \newline spaces) attributes)
+           \newline)
+      "")))
 
 (extend-protocol Generatable
-  Attribute ;; TODO: attribute value might also be an array
+  Attribute
   (generate [this]
-    (let [value (:value this)
-          value (if (string? value)
-                  (str \" value \")
-                  (generate value))]
-      (str (:name this) " = " value)))
+    (letfn [(generate-value [value]
+              (cond
+                (string? value)
+                (str \" value \")
+                (sequential? value)
+                (map generate-value value)
+                :else (generate value)))]
+
+      (let [value (generate-value (:value this))]
+        (if (sequential? value)
+          (str (:name this) " = [" (clojure.string/join ", " value) "]")
+          (str (:name this) " = " value)))))
 
   BlockAttribute
   (generate [this]
     (let [nested-attrs (indent
                         (generate-attributes this))]
-      (str (:name this) " {\n"
+      (str (:name this) " {"
            nested-attrs
            (generate-spaces)
            "}")))
@@ -57,7 +68,7 @@
       (str (generate-spaces)
            "resource \""
            (:type this) "\" \""
-           (:name this) "\" {\n"
+           (:name this) "\" {"
            attrs
            (generate-spaces)
            "}")))
@@ -68,7 +79,7 @@
           provider (str "provider " \" (:name this) \")
           attrs (indent
                  (generate-attributes this))
-          block (str "{\n"
+          block (str "{"
                      attrs
                      (generate-spaces)
                      "}")]
@@ -82,7 +93,7 @@
       (str (generate-spaces)
            "data \""
            (:type this) "\" \""
-           (:name this) "\" {\n"
+           (:name this) "\" {"
            attrs
            (generate-spaces)
            "}")))

@@ -42,6 +42,12 @@
 (def node-resources
   (comp :resources :entity))
 
+(def node-name
+  (comp :name :entity))
+
+(def node-value
+  (comp :value :entity))
+
 (defn resource-to-sym-tab-entry
   [owner-id resource]
   ;; TODO: transform all owner ids to owner nodes to make lookup O(1)
@@ -62,9 +68,10 @@
     (->SymTabEntry id owner-id entity)))
 
 (defn resource-to-sym-tab!
-  [resource]
-  (let [entry (resource-to-sym-tab-entry -1 resource)] ;; TODO: figure something out with '-1'
-    (swap! *sym-tab* #(update-in %1 [:entries] conj entry))))
+  [resource owner-id]
+  (let [entry (resource-to-sym-tab-entry owner-id resource)]
+    (swap! *sym-tab* #(update % :entries conj entry))
+    entry))
 
 ;; todo: symbol table should be filled during parsing
 (defn fill-sym-tab!
@@ -72,8 +79,9 @@
   (if (nil? @*sym-tab*)
     (throw (ex-info "Symbol table is uninitialized"
                     {}))
-    (doall
-     (map resource-to-sym-tab! resources))))
+    (->> resources
+         (map #(resource-to-sym-tab! % -1))  ;; TODO: figure something out with '-1'
+         doall)))
 
 (defn sym-tab-entities
   []
@@ -137,22 +145,31 @@
                       {:node node
                        :owner-id owner-id})))))
 
-(defn entity-get-attr-val  ;; TODO: DON'T TOUCH UNTILL ALL TESTS PASS!!!!
+(defn node-get-attr-node
+  [node name]
+  (->> (node-attrs node)
+       (filter #(= (node-name %) name))
+       last))
+
+(defn entity-get-attr
   [entity name]
   (->> (:attributes entity)
        (map :entity)
        (filter #(= (:name %) name))
-       last
+       last))
+
+(defn node-get-attr
+  [node name]
+  (entity-get-attr (:entity node) name))
+
+(defn entity-get-attr-val
+  [entity name]
+  (->> (entity-get-attr entity name)
        :value))
 
 (defn node-get-attr-val
   [node name]
   (entity-get-attr-val (:entity node) name))
-
-(defn update-node!
-  [node ;; TODO
-   ]
-  )
 
 (defn replace-node
   [old new]
@@ -169,12 +186,66 @@
                     (maybe-assoc-in [:entity :resources] updated-resources)))))]
 
     (let [nodes (:entries @*sym-tab*)
-          updated-nodes (map %helper nodes)]
+          updated-nodes (mapv %helper nodes)]
       (assoc @*sym-tab* :entries updated-nodes))))
+
+(defn update-node-entity! ;; TODO: rewrite
+  [node entity]
+  (->> entity
+       (assoc node :entity)
+       (replace-node node)
+       (reset! *sym-tab*)))
 
 (defn node-add-attr!
   "TODO: make more sophisticated"
-  [node attr-node]
-  (let [new-node (update-in node [:entity :attributes] conj attr-node)]
-    (reset! *sym-tab* (replace-node node new-node))))
+  [node-id attr-node]
+  (let [node (get-node node-id)
+        new-node (update-in node [:entity :attributes] conj attr-node)]
+    (reset! *sym-tab* (replace-node node new-node))
+    new-node))
 
+(defn node-remove-attr!
+  [node-id attr-node]
+  (let [node (get-node node-id)
+        new-node (update-in node [:entity :attributes]
+                            (fn [attrs]
+                              (remove #(= (:id attr-node)
+                                          (:id %))
+                                      attrs)))]
+    (reset! *sym-tab* (replace-node node new-node))
+    new-node))
+
+(defn post-traverse-sym-tab
+  "1. Traverse all sym tab nodes.
+   2. Apply `key-fn` to all nested resources and attributes.
+   3. Update resources and attrs in node
+   4. Apply `key-fn` to updated resource"
+  [key-fn]
+  (letfn [(%helper [resource-node]
+            (when resource-node
+              (let [resources (->> (node-resources resource-node)
+                                   (map %helper))
+                    attrs (->> (node-attrs resource-node)
+                               (map %helper))
+                    resource-node (maybe-assoc-in resource-node [:entity :resources]
+                                                  resources)
+                    resource-node (maybe-assoc-in resource-node [:entity :attributes]
+                                                  attrs)]
+                (key-fn resource-node))))]
+
+    (->> (:entries @*sym-tab*)
+         (map %helper))))
+
+(defn nodes->entities ;; TODO: rename
+  "Transform all sym tab nodes into entities"
+  []
+  (post-traverse-sym-tab #(:entity %)))
+
+(defn tf-get-resource-nodes
+  [res-type]
+  (->> (get-all-resource-nodes Object)
+       (filter #(= res-type (:type (:entity %))))))
+
+(defn tf-get-resource-node
+  [res-type]
+  (first (tf-get-resource-nodes res-type)))

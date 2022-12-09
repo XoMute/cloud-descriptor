@@ -60,7 +60,7 @@
     
     (when (not (node-get-attr-val vpc-node "cidr_block"))
       (let [cidr-block "10.0.0.0/16"]
-        (node-add-attr! vpc-node
+        (node-add-attr! (:id vpc-node)
                         (new-node (:id vpc-node)
                                   (->Attribute "cidr_block" cidr-block)))))))
 
@@ -81,7 +81,7 @@
         (let [subnet-node (first subnet-nodes)
               cidr-block (get-next-available-cidr-block subnet-node
                                                         cidr-blocks)]
-          (node-add-attr! subnet-node
+          (node-add-attr! (:id subnet-node)
                           (new-node (:id subnet-node)
                                     (->Attribute "cidr_block" cidr-block)))
           (recur (rest subnet-nodes)

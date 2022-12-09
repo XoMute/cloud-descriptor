@@ -3,7 +3,8 @@
             [cloud-descriptor.domain :as d :refer [translate]]
             [cloud-descriptor.terraform-domain :as tfd]
             [cloud-descriptor.utils :refer :all]
-            [cloud-descriptor.transformations.auto-cidr-blocks :refer :all])
+            [cloud-descriptor.transformations.auto-cidr-blocks :refer :all]
+            [cloud-descriptor.transformations.networking :refer :all])
   (:import [cloud_descriptor.domain Attribute
             BlockAttribute
             VPCResource
@@ -158,8 +159,10 @@
 
 (defn- post-translation-transformations
   "Run transformations on Terraform `*sym-tab*`"
-  [& {:keys []
-      :or {}}])
+  [& {:keys [networking-transformation]
+      :or {networking-transformation nil}}]
+  (when networking-transformation
+    (networking-transformation!)))
 
 (defn translate-to-tf
   [options]
@@ -168,7 +171,7 @@
     (reset-generator!)
     (with-terraform
       (->> translated-resources
-           (apply fill-sym-tab!)))
+           (apply fill-sym-tab!))
 
-    (apply post-translation-transformations options)))
+      (apply post-translation-transformations options))))
 
