@@ -146,8 +146,7 @@
 
 (defn translate-sym-tab
   "Translate `*sym-tab*` into Terraform `*sym-tab*`"
-  [& {:keys [auto-generate-cidr-blocks
-             networking-transformation]
+  [& {:keys [auto-generate-cidr-blocks]
       :or {auto-generate-cidr-blocks nil}}] ;; todo: add translation options
   ;; Run needed transformations
   (when auto-generate-cidr-blocks
@@ -159,9 +158,9 @@
 
 (defn- post-translation-transformations
   "Run transformations on Terraform `*sym-tab*`"
-  [& {:keys [networking-transformation]
-      :or {networking-transformation nil}}]
-  (when networking-transformation
+  [& {:keys [networking]
+      :or {networking nil}}]
+  (when networking
     (networking-transformation!)))
 
 (defn translate-to-tf

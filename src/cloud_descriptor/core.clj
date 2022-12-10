@@ -13,6 +13,10 @@
     :id :auto-generate-cidr-blocks
     :default true
     :parse-fn #(Boolean/valueOf %)]
+   [nil "--generate-networking BOOL" "Generate everything related to networking for EC2 instances"
+    :id :networking
+    :default true
+    :parse-fn #(Boolean/valueOf %)]
    ["-h" "--help"]])
 
 (defn- usage
