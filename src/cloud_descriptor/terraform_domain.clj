@@ -9,3 +9,9 @@
 (defrecord BlockAttribute [name attributes])
 
 (defrecord Resource [name type attributes])
+
+(defrecord Provider [name attributes])
+
+(defrecord Data [name type attributes])
+
+(defrecord QualifiedName [type name attribute]) ;; example: aws_vpc.TestVPC.id

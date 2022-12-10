@@ -2,16 +2,27 @@
   (:require [cloud-descriptor.symbol-table :refer :all]
             [cloud-descriptor.domain :as d :refer [translate]]
             [cloud-descriptor.terraform-domain :as tfd]
-            [cloud-descriptor.utils :refer :all])
+            [cloud-descriptor.utils :refer :all]
+            [cloud-descriptor.transformations.auto-cidr-blocks :refer :all]
+            [cloud-descriptor.transformations.networking :refer :all])
   (:import [cloud_descriptor.domain Attribute
-                                    BlockAttribute
-                                    VPCResource
-                                    SubnetResource
-                                    EC2Resource]))
+            BlockAttribute
+            VPCResource
+            SubnetResource
+            EC2Resource]))
 
 (declare translate-to-list)
 
+(def ^:dynamic *owner-id*) ;; tfd/QualifiedName
+
 ;; Code in this file translates InfraDesc symbol table to Terraform symbol table
+
+(defn- find-attribute ;; TODO: write in disser that in case of duplicate attributes no error will be thrown
+  [attributes name]
+  (->> attributes
+       (filter #(= (:name %) name))
+       last))
+
 (defn validate-vpc-attributes ;; todo: auto-generate cidr block (maybe do it as a separate translation step?)
   [attributes]
   (let [region (find-attribute attributes "region")]
@@ -39,8 +50,9 @@
 (defn validate-ec2-attributes
   [attributes]
   (let [ami (find-attribute attributes "ami")
+        image (find-attribute attributes "image")
         instance-type (find-attribute attributes "instance_type")]
-    (when-not ami
+    (when-not (or ami image)
       (throw (ex-info "EC2 resources must contain 'ami' attribute"
                       {})))
 
@@ -49,47 +61,73 @@
                       {})))
     attributes))
 
+(defn generate-owner-attribute
+  [attr-name]
+  (when *owner-id*
+    (tfd/->Attribute attr-name *owner-id*)))
+
 (extend-protocol d/Translatable
   Attribute
   (translate [this]
+    ;; TODO: array value
     (tfd/->Attribute (:name this) (:value this)))
 
   BlockAttribute
   (translate [this]
     (tfd/->BlockAttribute (:name this)
                           (->> (:attributes this)
+                               (map :entity)
                                (map translate))))
 
   VPCResource
   (translate [this]
-    (let [attributes (->> (:attributes this)
-                          (validate-vpc-attributes)
-                          (map translate))
-          resources (->> (:resources this)
-                         (validate-vpc-resources)
-                         translate-to-list)]
-      (concat [(tfd/->Resource (:name this) "aws_vpc"
-                               attributes)]
-              resources)))
+    (binding [*owner-id* (tfd/->QualifiedName "aws_vpc"
+                                              (:name this)
+                                              "id")]
+      (let [attributes (->> (:attributes this)
+                            (map :entity)
+                            (validate-vpc-attributes)
+                            (map translate))
+            resources (->> (:resources this)
+                           (map :entity)
+                           (validate-vpc-resources)
+                           translate-to-list)
+            [provider-attrs vpc-attrs]
+            (->> attributes
+                 (split-by #(= (:name %) "region")))
+            provider (tfd/->Provider "aws" provider-attrs)
+            vpc (tfd/->Resource (:name this) "aws_vpc"
+                                 vpc-attrs)]
+        (concat [provider vpc]
+                resources))))
 
   SubnetResource
   (translate [this]
-    (let [attributes (->> (:attributes this)
-                          (map translate))
-          resources (->> (:resources this)
-                         (validate-subnet-resources)
-                         translate-to-list)]
-      (concat [(tfd/->Resource (:name this) "aws_subnet"
-                               attributes)]
-              resources)))
+    (let [owner-attr (generate-owner-attribute "vpc_id")]
+      (binding [*owner-id* (tfd/->QualifiedName "aws_subnet"
+                                                (:name this)
+                                                "id")]
+        (let [attributes (->> (:attributes this)
+                              (map :entity)
+                              (map translate))
+              resources (->> (:resources this)
+                             (map :entity)
+                             (validate-subnet-resources)
+                             translate-to-list)]
+          (concat [(tfd/->Resource (:name this) "aws_subnet"
+                                   (cons owner-attr attributes))]
+                  resources)))))
 
   EC2Resource
   (translate [this]
-    (let [attributes (->> (:attributes this)
+    ;; todo: generate network interface for ec2
+    (let [owner-attr (generate-owner-attribute "subnet_id")
+          attributes (->> (:attributes this)
+                          (map :entity)
                           (validate-ec2-attributes)
                           (map translate))]
       (tfd/->Resource (:name this) "aws_instance"
-                      attributes))))
+                      (cons owner-attr attributes)))))
 
 (defn translate-to-list
   "Translates given entities and returns resulting resources in a single list"
@@ -102,16 +140,38 @@
 (defn translate-resources
   "Traverse all resources in symbol table and translate them"
   []
-  (->> @*sym-tab*
-       :entries
-       (map :entity)
+  (->> (sym-tab-entities)
        translate-to-list
        doall))
 
 (defn translate-sym-tab
   "Translate `*sym-tab*` into Terraform `*sym-tab*`"
-  [] ;; todo: add translation options
-  ;; Do needed transformations
+  [& {:keys [auto-generate-cidr-blocks
+             networking-transformation]
+      :or {auto-generate-cidr-blocks nil}}] ;; todo: add translation options
+  ;; Run needed transformations
+  (when auto-generate-cidr-blocks
+    (auto-generate-cidr-blocks!))
+
+  ;; TODO: transformation to add lifecycle?
   ;; Translate resources in `*sym-tab*`
   (translate-resources))
+
+(defn- post-translation-transformations
+  "Run transformations on Terraform `*sym-tab*`"
+  [& {:keys [networking-transformation]
+      :or {networking-transformation nil}}]
+  (when networking-transformation
+    (networking-transformation!)))
+
+(defn translate-to-tf
+  [options]
+  (let [options (into [] cat options)
+        translated-resources (apply translate-sym-tab options)]
+    (reset-generator!)
+    (with-terraform
+      (->> translated-resources
+           (apply fill-sym-tab!))
+
+      (apply post-translation-transformations options))))
 
