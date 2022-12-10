@@ -145,11 +145,23 @@
     [(resource-to-sym-tab! route-table -1)
      (resource-to-sym-tab! route-table-association -1)]))
 
-(defn- make-ec2-public!
-  [ec2-node]
-  (->> (->Attribute "associate_public_ip_address" "true")
-       (new-node (:id ec2-node))
-       (node-add-attr! (:id ec2-node))))
+(defn- generate-internet-gateway!
+  []
+  (let [vpc-node (tf-get-resource-node "aws_vpc")
+        attrs [(->Attribute "vpc_id" (->QualifiedName "aws_vpc" (node-name vpc-node) "id"))]
+        internet-gateway (->Resource *ec2-name* "aws_internet_gateway" attrs)]
+    (resource-to-sym-tab! internet-gateway -1)))
+
+(defn- generate-public-eip! ;; TODO: merge with `generate-ip!`
+  [network-interface-node internet-gateway-node]
+  (let [ec2-private-ips (node-get-attr-val network-interface-node "private_ips")
+        eip-attrs [(->Attribute "vpc" "true")
+                   (->Attribute "network_interface"
+                                (->QualifiedName "aws_network_interface" (node-name network-interface-node) "id"))
+                   (->Attribute "associate_with_private_ip" (first ec2-private-ips)) ;; TODO: support for multiple private ips
+                   ]
+        eip (->Resource *ec2-name* "aws_eip" eip-attrs)]
+    (resource-to-sym-tab! eip -1)))
 
 (defn- process-networking-attr!
   [ec2-node]
@@ -166,15 +178,16 @@
             network-interface-node (generate-network-interface! security-group-node)
             ec2-node (attach-network-interface-to-ec2! ec2-node network-interface-node)]
 
-        (cond
+        (cond ;; TODO: improve clarity
           (and has-ingress?
                has-egress?)
           ;; no need to generate NAT if the ec2 instance has a public IP address
-          (make-ec2-public! ec2-node)
+          (let [internet-gateway-node (generate-internet-gateway!)]
+            (generate-public-eip! network-interface-node internet-gateway-node))
           has-ingress?
           ;; actions to do when networking contains at least one ingress rule
-          (do
-            (make-ec2-public! ec2-node))
+          (let [internet-gateway-node (generate-internet-gateway!)]
+            (generate-public-eip! network-interface-node internet-gateway-node))
           has-egress?
           ;; actions to do when networking contains at least one egress rule
           (let [nat-node (generate-nat! networking-attr-node)
@@ -184,7 +197,9 @@
                                        security-group-node)]))
 
         ;; remove networking attr
-        (let [ec2-node (node-remove-attr! (:id ec2-node) networking-attr-node)]
+        (let [ec2-node (node-remove-attr! (:id ec2-node) networking-attr-node)
+              ec2-node (node-remove-attr! (:id ec2-node) (node-get-attr-node ec2-node "subnet_id")) ;; TODO: move from here
+              ]
           )))))
 
 (defn networking-transformation!

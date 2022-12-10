@@ -13,7 +13,7 @@
      (initialize)
      (with-sym-tab
        (input->symbol-table ~input)
-       (translate-to-tf {:networking-transformation true
+       (translate-to-tf {:networking true
                          :auto-generate-cidr-blocks true}))
      (with-terraform
        (let [output# (generate-resources)]
@@ -90,7 +90,6 @@ resource \"aws_subnet\" \"TestSubnet\" {
 }
 
 resource \"aws_instance\" \"TestEC2\" {
-  subnet_id = aws_subnet.TestSubnet.id
   ami = \"ubuntu\"
   instance_type = \"t3.micro\"
   network_interface {
@@ -166,14 +165,12 @@ resource \"aws_subnet\" \"TestSubnet\" {
 }
 
 resource \"aws_instance\" \"TestEC2\" {
-  subnet_id = aws_subnet.TestSubnet.id
   ami = \"ubuntu\"
   instance_type = \"t3.micro\"
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
   }
-  associate_public_ip_address = \"true\"
 }
 
 resource \"aws_security_group\" \"TestEC2\" {
@@ -190,6 +187,16 @@ resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+}
+
+resource \"aws_internet_gateway\" \"TestEC2\" {
+  vpc_id = aws_vpc.TestVPC.id
+}
+
+resource \"aws_eip\" \"TestEC2\" {
+  vpc = \"true\"
+  network_interface = aws_network_interface.TestEC2.id
+  associate_with_private_ip = \"10.0.1.4\"
 }"))
 
     (testing "networking with egress and ingress rule should generate public ip for the instance"
@@ -222,14 +229,12 @@ resource \"aws_subnet\" \"TestSubnet\" {
 }
 
 resource \"aws_instance\" \"TestEC2\" {
-  subnet_id = aws_subnet.TestSubnet.id
   ami = \"ubuntu\"
   instance_type = \"t3.micro\"
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
   }
-  associate_public_ip_address = \"true\"
 }
 
 resource \"aws_security_group\" \"TestEC2\" {
@@ -252,11 +257,21 @@ resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+}
+
+resource \"aws_internet_gateway\" \"TestEC2\" {
+  vpc_id = aws_vpc.TestVPC.id
+}
+
+resource \"aws_eip\" \"TestEC2\" {
+  vpc = \"true\"
+  network_interface = aws_network_interface.TestEC2.id
+  associate_with_private_ip = \"10.0.1.4\"
 }"))
 
-    (testing "networking with all egress rules available"
-        (test-transformation
-         "VPC TestVPC {
+    (testing "networking with all ingress and egress rules available"
+      (test-transformation
+       "VPC TestVPC {
   region = eu-north-1
   Subnet TestSubnet {
     EC2 TestEC2 {
@@ -270,7 +285,7 @@ resource \"aws_network_interface\" \"TestEC2\" {
     }
   }
 }"
-         "provider \"aws\" {
+       "provider \"aws\" {
   region = \"eu-north-1\"
 }
 
@@ -284,14 +299,12 @@ resource \"aws_subnet\" \"TestSubnet\" {
 }
 
 resource \"aws_instance\" \"TestEC2\" {
-  subnet_id = aws_subnet.TestSubnet.id
   ami = \"ubuntu\"
   instance_type = \"t3.micro\"
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
   }
-  associate_public_ip_address = \"true\"
 }
 
 resource \"aws_security_group\" \"TestEC2\" {
@@ -350,5 +363,15 @@ resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+}
+
+resource \"aws_internet_gateway\" \"TestEC2\" {
+  vpc_id = aws_vpc.TestVPC.id
+}
+
+resource \"aws_eip\" \"TestEC2\" {
+  vpc = \"true\"
+  network_interface = aws_network_interface.TestEC2.id
+  associate_with_private_ip = \"10.0.1.4\"
 }"))))
 
