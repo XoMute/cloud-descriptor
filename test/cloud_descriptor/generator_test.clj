@@ -33,6 +33,9 @@
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"10.0.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }")
 
       (testing "with subnet"
@@ -48,11 +51,17 @@ resource \"aws_vpc\" \"TestVPC\" {
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"172.16.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }
 
 resource \"aws_subnet\" \"TestSubnet\" {
   vpc_id = aws_vpc.TestVPC.id
   cidr_block = \"172.16.0.0/24\"
+  tags = {
+    Name = \"TestSubnet\"
+  }
 }" ;; TODO: availability zone
          )
 
@@ -80,12 +89,18 @@ resource \"aws_subnet\" \"TestSubnet\" {
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"10.0.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }
 
 resource \"aws_subnet\" \"TestSubnet\" {
   vpc_id = aws_vpc.TestVPC.id
   cidr_block = \"10.0.6.0/24\"
   availability_zone = \"eu-north-1a\"
+  tags = {
+    Name = \"TestSubnet\"
+  }
 }
 
 resource \"aws_instance\" \"TestServer\" {
@@ -96,26 +111,9 @@ resource \"aws_instance\" \"TestServer\" {
     ingress = \"http\"
     egress = \"all\"
   }
+  tags = {
+    Name = \"TestServer\"
+  }
 }" ;; TODO: test is incorrect
            ))))))
 
-(deftest basic-infra
-  #_(testing "Generation of basic infrastructure"
-    (test-generation
-     "VPC ExampleVPC {
-  cidr_block = 172.22.0.0/16
-  region = eu-north-1
-
-  Subnet ExampleSubnet {
-
-    EC2 ExampleEC2 {
-      ami = \"ami-078e13ebe3b027f1c\"
-      instance_type = \"t3.micro\"
-
-      networking {
-        ingress = all
-      }
-    }
-  }
-}"
-     "")))

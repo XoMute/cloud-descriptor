@@ -66,6 +66,11 @@
   (when *owner-id*
     (tfd/->Attribute attr-name *owner-id*)))
 
+(defn- generate-tags
+  [name-tag]
+  (tfd/->Attribute "tags"
+                   {"Name" name-tag}))
+
 (extend-protocol d/Translatable
   Attribute
   (translate [this]
@@ -88,6 +93,8 @@
                             (map :entity)
                             (validate-vpc-attributes)
                             (map translate))
+            attributes (concat attributes
+                               (list (generate-tags (:name this))))
             resources (->> (:resources this)
                            (map :entity)
                            (validate-vpc-resources)
@@ -97,7 +104,7 @@
                  (split-by #(= (:name %) "region")))
             provider (tfd/->Provider "aws" provider-attrs)
             vpc (tfd/->Resource (:name this) "aws_vpc"
-                                 vpc-attrs)]
+                                vpc-attrs)]
         (concat [provider vpc]
                 resources))))
 
@@ -110,6 +117,8 @@
         (let [attributes (->> (:attributes this)
                               (map :entity)
                               (map translate))
+              attributes (concat attributes
+                                 (list (generate-tags (:name this))))
               resources (->> (:resources this)
                              (map :entity)
                              (validate-subnet-resources)
@@ -125,7 +134,9 @@
           attributes (->> (:attributes this)
                           (map :entity)
                           (validate-ec2-attributes)
-                          (map translate))]
+                          (map translate))
+          attributes (concat attributes
+                             (list (generate-tags (:name this))))]
       (tfd/->Resource (:name this) "aws_instance"
                       (cons owner-attr attributes)))))
 

@@ -7,6 +7,10 @@
 (def ^:dynamic *ec2-name*)
 (def ^:dynamic *ip*)
 
+(defn- generate-tags
+  [suffix]
+  (->Attribute "tags" {"Name" (str *ec2-name* "-" suffix)}))
+
 (defn- next-private-ip
   [subnet-node]
   ;; TODO: fix for separate ips in each subnet (e.g. hashmap with subnet ids)
@@ -33,7 +37,8 @@
                                           [(->QualifiedName "aws_security_group"
                                                             (node-name sg-node)
                                                             "id")])
-        network-interface-attrs [subnet-id-attr private-ips-attr security-groups-attr]
+        network-interface-attrs [subnet-id-attr private-ips-attr security-groups-attr
+                                 (generate-tags "ni")]
         network-interface (->Resource *ec2-name* "aws_network_interface" network-interface-attrs)]
     (resource-to-sym-tab! network-interface -1)))
 
@@ -90,6 +95,7 @@
         rules (generate-security-group-rules networking-attr-node)
         security-group-attrs (list* (->Attribute "vpc_id"
                                              (->QualifiedName "aws_vpc" (node-name vpc-node) "id"))
+                                    (generate-tags "sg")
                                     rules)
         security-group (->Resource *ec2-name* "aws_security_group" security-group-attrs)]
     (resource-to-sym-tab! security-group -1)))
@@ -97,7 +103,8 @@
 (defn- generate-eip!
   []
   ;; TODO: fix naming of resource - it won't work if called multiple times
-  (let [eip-attrs [(->Attribute "vpc" "true")]
+  (let [eip-attrs [(->Attribute "vpc" "true")
+                   (generate-tags "eip")]
         eip (->Resource *ec2-name* "aws_eip" eip-attrs)]
     (resource-to-sym-tab! eip -1)))
 
@@ -108,7 +115,8 @@
         nat-attrs [(->Attribute "allocation_id"
                                 (->QualifiedName "aws_eip" (node-name eip-node) "id"))
                    (->Attribute "subnet_id"
-                                (->QualifiedName "aws_subnet" (node-name subnet-node) "id"))]
+                                (->QualifiedName "aws_subnet" (node-name subnet-node) "id"))
+                   (generate-tags "nat")]
         nat (->Resource *ec2-name* "aws_nat_gateway" nat-attrs)]
     (resource-to-sym-tab! nat -1)))
 
@@ -132,6 +140,7 @@
                                                                       "id"))])
                     egress-cidr-blocks)
         route-table-attrs (list* (->Attribute "vpc_id" (->QualifiedName "aws_vpc" (node-name vpc-node) "id"))
+                                 (generate-tags "rt")
                                  routes)
         route-table (->Resource *ec2-name* "aws_route_table" route-table-attrs)
 
@@ -148,7 +157,8 @@
 (defn- generate-internet-gateway!
   []
   (let [vpc-node (tf-get-resource-node "aws_vpc")
-        attrs [(->Attribute "vpc_id" (->QualifiedName "aws_vpc" (node-name vpc-node) "id"))]
+        attrs [(->Attribute "vpc_id" (->QualifiedName "aws_vpc" (node-name vpc-node) "id"))
+               (generate-tags "igw")]
         internet-gateway (->Resource *ec2-name* "aws_internet_gateway" attrs)]
     (resource-to-sym-tab! internet-gateway -1)))
 
@@ -159,7 +169,7 @@
                    (->Attribute "network_interface"
                                 (->QualifiedName "aws_network_interface" (node-name network-interface-node) "id"))
                    (->Attribute "associate_with_private_ip" (first ec2-private-ips)) ;; TODO: support for multiple private ips
-                   ]
+                   (generate-tags "eip")]
         eip (->Resource *ec2-name* "aws_eip" eip-attrs)]
     (resource-to-sym-tab! eip -1)))
 

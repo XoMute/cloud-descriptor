@@ -82,11 +82,17 @@
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"10.0.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }
 
 resource \"aws_subnet\" \"TestSubnet\" {
   vpc_id = aws_vpc.TestVPC.id
   cidr_block = \"10.0.1.0/24\"
+  tags = {
+    Name = \"TestSubnet\"
+  }
 }
 
 resource \"aws_instance\" \"TestEC2\" {
@@ -95,6 +101,9 @@ resource \"aws_instance\" \"TestEC2\" {
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
+  }
+  tags = {
+    Name = \"TestEC2\"
   }
 }
 
@@ -106,21 +115,33 @@ resource \"aws_security_group\" \"TestEC2\" {
     to_port = \"0\"
     cidr_blocks = [\"0.0.0.0/0\"]
   }
+  tags = {
+    Name = \"TestEC2-sg\"
+  }
 }
 
 resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+  tags = {
+    Name = \"TestEC2-ni\"
+  }
 }
 
 resource \"aws_eip\" \"TestEC2\" {
   vpc = \"true\"
+  tags = {
+    Name = \"TestEC2-eip\"
+  }
 }
 
 resource \"aws_nat_gateway\" \"TestEC2\" {
   allocation_id = aws_eip.TestEC2.id
   subnet_id = aws_subnet.TestSubnet.id
+  tags = {
+    Name = \"TestEC2-nat\"
+  }
 }
 
 resource \"aws_route_table\" \"TestEC2\" {
@@ -128,6 +149,9 @@ resource \"aws_route_table\" \"TestEC2\" {
   route {
     cidr_block = \"0.0.0.0/0\"
     nat_gateway_id = aws_nat_gateway.TestEC2.id
+  }
+  tags = {
+    Name = \"TestEC2-rt\"
   }
 }
 
@@ -157,11 +181,17 @@ resource \"aws_route_table_association\" \"TestEC2\" {
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"10.0.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }
 
 resource \"aws_subnet\" \"TestSubnet\" {
   vpc_id = aws_vpc.TestVPC.id
   cidr_block = \"10.0.1.0/24\"
+  tags = {
+    Name = \"TestSubnet\"
+  }
 }
 
 resource \"aws_instance\" \"TestEC2\" {
@@ -170,6 +200,9 @@ resource \"aws_instance\" \"TestEC2\" {
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
+  }
+  tags = {
+    Name = \"TestEC2\"
   }
 }
 
@@ -181,22 +214,34 @@ resource \"aws_security_group\" \"TestEC2\" {
     to_port = \"22\"
     cidr_blocks = [\"0.0.0.0/0\"]
   }
+  tags = {
+    Name = \"TestEC2-sg\"
+  }
 }
 
 resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+  tags = {
+    Name = \"TestEC2-ni\"
+  }
 }
 
 resource \"aws_internet_gateway\" \"TestEC2\" {
   vpc_id = aws_vpc.TestVPC.id
+  tags = {
+    Name = \"TestEC2-igw\"
+  }
 }
 
 resource \"aws_eip\" \"TestEC2\" {
   vpc = \"true\"
   network_interface = aws_network_interface.TestEC2.id
   associate_with_private_ip = \"10.0.1.4\"
+  tags = {
+    Name = \"TestEC2-eip\"
+  }
 }"))
 
     (testing "networking with egress and ingress rule should generate public ip for the instance"
@@ -221,11 +266,17 @@ resource \"aws_eip\" \"TestEC2\" {
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"10.0.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }
 
 resource \"aws_subnet\" \"TestSubnet\" {
   vpc_id = aws_vpc.TestVPC.id
   cidr_block = \"10.0.1.0/24\"
+  tags = {
+    Name = \"TestSubnet\"
+  }
 }
 
 resource \"aws_instance\" \"TestEC2\" {
@@ -234,6 +285,9 @@ resource \"aws_instance\" \"TestEC2\" {
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
+  }
+  tags = {
+    Name = \"TestEC2\"
   }
 }
 
@@ -251,22 +305,34 @@ resource \"aws_security_group\" \"TestEC2\" {
     to_port = \"80\"
     cidr_blocks = [\"0.0.0.0/0\"]
   }
+  tags = {
+    Name = \"TestEC2-sg\"
+  }
 }
 
 resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+  tags = {
+    Name = \"TestEC2-ni\"
+  }
 }
 
 resource \"aws_internet_gateway\" \"TestEC2\" {
   vpc_id = aws_vpc.TestVPC.id
+  tags = {
+    Name = \"TestEC2-igw\"
+  }
 }
 
 resource \"aws_eip\" \"TestEC2\" {
   vpc = \"true\"
   network_interface = aws_network_interface.TestEC2.id
   associate_with_private_ip = \"10.0.1.4\"
+  tags = {
+    Name = \"TestEC2-eip\"
+  }
 }"))
 
     (testing "networking with all ingress and egress rules available"
@@ -291,11 +357,17 @@ resource \"aws_eip\" \"TestEC2\" {
 
 resource \"aws_vpc\" \"TestVPC\" {
   cidr_block = \"10.0.0.0/16\"
+  tags = {
+    Name = \"TestVPC\"
+  }
 }
 
 resource \"aws_subnet\" \"TestSubnet\" {
   vpc_id = aws_vpc.TestVPC.id
   cidr_block = \"10.0.1.0/24\"
+  tags = {
+    Name = \"TestSubnet\"
+  }
 }
 
 resource \"aws_instance\" \"TestEC2\" {
@@ -304,6 +376,9 @@ resource \"aws_instance\" \"TestEC2\" {
   network_interface {
     device_index = \"0\"
     network_interface_id = aws_network_interface.TestEC2.id
+  }
+  tags = {
+    Name = \"TestEC2\"
   }
 }
 
@@ -357,21 +432,33 @@ resource \"aws_security_group\" \"TestEC2\" {
     to_port = \"443\"
     cidr_blocks = [\"0.0.0.0/0\"]
   }
+  tags = {
+    Name = \"TestEC2-sg\"
+  }
 }
 
 resource \"aws_network_interface\" \"TestEC2\" {
   subnet_id = aws_subnet.TestSubnet.id
   private_ips = [\"10.0.1.4\"]
   security_groups = [aws_security_group.TestEC2.id]
+  tags = {
+    Name = \"TestEC2-ni\"
+  }
 }
 
 resource \"aws_internet_gateway\" \"TestEC2\" {
   vpc_id = aws_vpc.TestVPC.id
+  tags = {
+    Name = \"TestEC2-igw\"
+  }
 }
 
 resource \"aws_eip\" \"TestEC2\" {
   vpc = \"true\"
   network_interface = aws_network_interface.TestEC2.id
   associate_with_private_ip = \"10.0.1.4\"
+  tags = {
+    Name = \"TestEC2-eip\"
+  }
 }"))))
 

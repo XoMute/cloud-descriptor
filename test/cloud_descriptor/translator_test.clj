@@ -35,7 +35,8 @@
               (is (= [(->Provider "aws"
                                   [(->Attribute "region" "eu-north-1")])
                       (->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")])]
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")
+                                   (->Attribute "tags" {"Name" "TestVPC"})])]
                      (translate-sym-tab))))))
         (testing "> with auto-generated cidr_block"
           (let [input-string "VPC TestVPC { region=eu-north-1 }"]
@@ -45,7 +46,8 @@
               (is (= [(->Provider "aws"
                                   [(->Attribute "region" "eu-north-1")])
                       (->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")])]
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")
+                                   (->Attribute "tags" {"Name" "TestVPC"})])]
                      (translate-sym-tab :auto-generate-cidr-blocks :true)))))))
 
       (testing "with one subnet"
@@ -60,11 +62,13 @@
             (is (= [(->Provider "aws"
                                 [(->Attribute "region" "eu-north-1")])
                     (->Resource "TestVPC" "aws_vpc"
-                                [(->Attribute "cidr_block" "10.0.0.0/16")])
+                                [(->Attribute "cidr_block" "10.0.0.0/16")
+                                 (->Attribute "tags" {"Name" "TestVPC"})])
                     (->Resource "TestSubnet" "aws_subnet"
                                 [(->Attribute "vpc_id"
                                               (->QualifiedName "aws_vpc" "TestVPC" "id"))
-                                 (->Attribute "cidr_block" "10.0.5.0/24")])]
+                                 (->Attribute "cidr_block" "10.0.5.0/24")
+                                 (->Attribute "tags" {"Name" "TestSubnet"})])]
                    (translate-sym-tab)))))
 
         (testing "with auto-generated cidr_block"
@@ -80,13 +84,15 @@
                 (is (= [(->Provider "aws"
                                     [(->Attribute "region" "eu-north-1")])
                         (->Resource "TestVPC" "aws_vpc"
-                                    [(->Attribute "cidr_block" "10.0.0.0/16")])
+                                    [(->Attribute "cidr_block" "10.0.0.0/16")
+                                     (->Attribute "tags" {"Name" "TestVPC"})])
                         (->Resource "TestSubnet" "aws_subnet"
                                     [(->Attribute "vpc_id"
                                                   (->QualifiedName "aws_vpc"
                                                                    "TestVPC"
                                                                    "id"))
-                                     (->Attribute "cidr_block" "10.0.1.0/24")])]
+                                     (->Attribute "cidr_block" "10.0.1.0/24")
+                                     (->Attribute "tags" {"Name" "TestSubnet"})])]
                        (translate-sym-tab :auto-generate-cidr-blocks :true))
                     "generate cidr_block for subnet")))
           
@@ -100,13 +106,15 @@
                 (is (= [(->Provider "aws"
                                     [(->Attribute "region" "eu-north-1")])
                         (->Resource "TestVPC" "aws_vpc"
-                                    [(->Attribute "cidr_block" "10.0.0.0/16")])
+                                    [(->Attribute "cidr_block" "10.0.0.0/16")
+                                     (->Attribute "tags" {"Name" "TestVPC"})])
                         (->Resource "TestSubnet" "aws_subnet"
                                     [(->Attribute "vpc_id"
                                                   (->QualifiedName "aws_vpc"
                                                                    "TestVPC"
                                                                    "id"))
-                                     (->Attribute "cidr_block" "10.0.1.0/24")])]
+                                     (->Attribute "cidr_block" "10.0.1.0/24")
+                                     (->Attribute "tags" {"Name" "TestSubnet"})])]
                        (translate-sym-tab :auto-generate-cidr-blocks :true)))))))
         (testing "and empty EC2"
           (let [input-string "VPC TestVPC {
@@ -161,21 +169,24 @@
                 (is (= [(->Provider "aws"
                                     [(->Attribute "region" "eu-north-1")])
                         (->Resource "TestVPC" "aws_vpc"
-                                    [(->Attribute "cidr_block" "10.0.0.0/16")])
+                                    [(->Attribute "cidr_block" "10.0.0.0/16")
+                                     (->Attribute "tags" {"Name" "TestVPC"})])
                         (->Resource "TestSubnet" "aws_subnet"
                                     [(->Attribute "vpc_id"
                                                   (->QualifiedName "aws_vpc"
                                                                    "TestVPC"
                                                                    "id"))
                                      (->Attribute "cidr_block" "10.0.6.0/24")
-                                     (->Attribute "availability_zone" "eu-north-1a")])
+                                     (->Attribute "availability_zone" "eu-north-1a")
+                                     (->Attribute "tags" {"Name" "TestSubnet"})])
                         (->Resource "TestServer" "aws_instance"
                                     [(->Attribute "subnet_id"
                                                   (->QualifiedName "aws_subnet"
                                                                    "TestSubnet"
                                                                    "id"))
                                      (->Attribute "ami" "ubuntu")
-                                     (->Attribute "instance_type" "t3.micro")])]
+                                     (->Attribute "instance_type" "t3.micro")
+                                     (->Attribute "tags" {"Name" "TestServer"})])]
                        (translate-sym-tab))))))))
 
       (testing "with multiple subnets:"
@@ -192,19 +203,22 @@
               (is (= [(->Provider "aws"
                                   [(->Attribute "region" "eu-north-1")])
                       (->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")])
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")
+                                   (->Attribute "tags" {"Name" "TestVPC"})])
                       (->Resource "TestSubnet1" "aws_subnet"
                                   [(->Attribute "vpc_id"
                                                 (->QualifiedName "aws_vpc"
                                                                  "TestVPC"
                                                                  "id"))
-                                   (->Attribute "cidr_block" "10.0.1.0/24")])
+                                   (->Attribute "cidr_block" "10.0.1.0/24")
+                                   (->Attribute "tags" {"Name" "TestSubnet1"})])
                       (->Resource "TestSubnet2" "aws_subnet"
                                   [(->Attribute "vpc_id"
                                                 (->QualifiedName "aws_vpc"
                                                                  "TestVPC"
                                                                  "id"))
-                                   (->Attribute "cidr_block" "10.0.2.0/24")])]
+                                   (->Attribute "cidr_block" "10.0.2.0/24")
+                                   (->Attribute "tags" {"Name" "TestSubnet2"})])]
                      (translate-sym-tab :auto-generate-cidr-blocks :true)))))
 
           (let [input-string "VPC TestVPC {
@@ -219,19 +233,22 @@
               (is (= [(->Provider "aws"
                                   [(->Attribute "region" "eu-north-1")])
                       (->Resource "TestVPC" "aws_vpc"
-                                  [(->Attribute "cidr_block" "10.0.0.0/16")])
+                                  [(->Attribute "cidr_block" "10.0.0.0/16")
+                                   (->Attribute "tags" {"Name" "TestVPC"})])
                       (->Resource "TestSubnet1" "aws_subnet"
                                   [(->Attribute "vpc_id"
                                                 (->QualifiedName "aws_vpc"
                                                                  "TestVPC"
                                                                  "id"))
-                                   (->Attribute "cidr_block" "10.12.4.0/24")])
+                                   (->Attribute "cidr_block" "10.12.4.0/24")
+                                   (->Attribute "tags" {"Name" "TestSubnet1"})])
                       (->Resource "TestSubnet2" "aws_subnet"
                                   [(->Attribute "vpc_id"
                                                 (->QualifiedName "aws_vpc"
                                                                  "TestVPC"
                                                                  "id"))
-                                   (->Attribute "cidr_block" "10.12.5.0/24")])]
+                                   (->Attribute "cidr_block" "10.12.5.0/24")
+                                   (->Attribute "tags" {"Name" "TestSubnet2"})])]
                      (translate-sym-tab :auto-generate-cidr-blocks :true))
                   "generate cidr_block for subnet"))))
 
@@ -266,13 +283,15 @@
           (is (= [(->Provider "aws"
                               [(->Attribute "region" "eu-north-1")])
                   (->Resource "ExampleVPC" "aws_vpc"
-                              [(->Attribute "cidr_block" "172.22.0.0/16")])
+                              [(->Attribute "cidr_block" "172.22.0.0/16")
+                               (->Attribute "tags" {"Name" "ExampleVPC"})])
                   (->Resource "ExampleSubnet" "aws_subnet"
                               [(->Attribute "vpc_id"
                                             (->QualifiedName "aws_vpc"
                                                              "ExampleVPC"
                                                              "id"))
-                               (->Attribute "cidr_block" "172.22.1.0/24")])
+                               (->Attribute "cidr_block" "172.22.1.0/24")
+                               (->Attribute "tags" {"Name" "ExampleSubnet"})])
                   (->Resource "ExampleEC2" "aws_instance"
                               [(->Attribute "subnet_id"
                                             (->QualifiedName "aws_subnet"
@@ -281,7 +300,8 @@
                                (->Attribute "ami" "ami-078e13ebe3b027f1c")
                                (->Attribute "instance_type" "t3.micro")
                                (->BlockAttribute "networking"
-                                                 [(->Attribute "ingress" "all")])])]
+                                                 [(->Attribute "ingress" "all")])
+                               (->Attribute "tags" {"Name" "ExampleEC2"})])]
                  (translate-full))))))
 
     (testing "autoscaling block"

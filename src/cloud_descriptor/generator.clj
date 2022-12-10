@@ -22,11 +22,21 @@
   (->> (repeat *indent* \space)
        (apply str)))
 
+(defn- sort-with-tags ;; TODO: rewrite to be more efficient
+  "Move tags attribute to the end of the list"
+  [attributes]
+  (if-let [tags (first (filter #(= "tags" (node-name %)) attributes))]
+    (-> (remove #(= "tags" (node-name %))
+                attributes)
+        (concat (list tags)))
+    attributes))
+
 (defn generate-attributes
   [resource]
   (let [attributes (->> (:attributes resource)
-                        (sort #(< (:id %1)
-                                  (:id %2))) ;; TODO: maybe remove?
+                        (sort-with-tags)
+                        #_(sort #(< (:id %1)
+                                    (:id %2))) ;; TODO: maybe remove?
                         (map :entity)
                         (map generate))
         spaces (generate-spaces)]
@@ -35,6 +45,16 @@
            (clojure.string/join (str \newline spaces) attributes)
            \newline)
       "")))
+
+(defn- generate-tags
+  [tags-map]
+  (let [spaces (generate-spaces)
+        tags (map (fn [[k v]]
+                    (str k " = " \" v \"))
+              tags-map)]
+    (str \newline spaces
+         (clojure.string/join (str \newline spaces) tags)
+         \newline)))
 
 (extend-protocol Generatable
   Attribute
@@ -47,10 +67,15 @@
                 (map generate-value value)
                 :else (generate value)))]
 
-      (let [value (generate-value (:value this))]
-        (if (sequential? value)
-          (str (:name this) " = [" (clojure.string/join ", " value) "]")
-          (str (:name this) " = " value)))))
+      (let [value (:value this)]
+        (cond
+          (= "tags" (:name this))
+          (str (:name this) " = {" (indent (generate-tags value))
+               (generate-spaces) "}")
+          (sequential? value)
+          (str (:name this) " = [" (clojure.string/join ", " (generate-value value)) "]")
+          :else
+          (str (:name this) " = " (generate-value value))))))
 
   BlockAttribute
   (generate [this]

@@ -70,7 +70,8 @@
 (defn resource-to-sym-tab!
   [resource owner-id]
   (let [entry (resource-to-sym-tab-entry owner-id resource)]
-    (swap! *sym-tab* #(update % :entries conj entry))
+    ;; TODO: rewrite without concat and list
+    (swap! *sym-tab* #(update % :entries concat (list entry)))
     entry))
 
 ;; todo: symbol table should be filled during parsing
@@ -200,7 +201,8 @@
   "TODO: make more sophisticated"
   [node-id attr-node]
   (let [node (get-node node-id)
-        new-node (update-in node [:entity :attributes] conj attr-node)]
+        ;; TODO: rewrite without concat
+        new-node (update-in node [:entity :attributes] concat (list attr-node))]
     (reset! *sym-tab* (replace-node node new-node))
     new-node))
 
